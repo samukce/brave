@@ -19,6 +19,7 @@ import brave.internal.InternalHandler;
 import brave.internal.Platform;
 import brave.propagation.TraceContext;
 
+// TODO make a weak map of MutableSpan -> Throwable instead of a hacky field in MutableSpan
 public final class OrphanTracker extends SpanListener {
   @Override public void onCreate(TraceContext parent, TraceContext context, MutableSpan span) {
     InternalHandler.instance.caller(span,

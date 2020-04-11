@@ -27,11 +27,14 @@ import java.lang.ref.WeakReference;
  * <p>As with {@link FinishedSpanHandler}, it is important to do work quickly as callbacks are run
  * on the same thread as application code. That said, there are some rules to keep in mind below.
  *
- * <p>The {@link TraceContext} parameter will be the same reference for all callbacks, except
- * {@link #onOrphan}, which has value, but not reference equality.
+ * <p>The {@link TraceContext} parameter from {@link #onCreate} will be the same reference for
+ * all callbacks, except {@link #onOrphan}, which has value, but not reference equality.
+ *
+ * <p>The {@link MutableSpan} parameter from {@link #onCreate} will be the same reference for
+ * all callbacks.
  *
  * <p>If caching the {@link TraceContext} parameter, consider a {@link WeakReference} to avoid
- * holding up garbage collection. Do not cache the {@link MutableSpan} parameter.
+ * holding up garbage collection.
  */
 public class SpanListener {
   /** Use to avoid comparing against null references */
