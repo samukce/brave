@@ -30,7 +30,6 @@ import java.lang.ref.WeakReference;
 public final class PendingSpan extends WeakReference<TraceContext> {
   final MutableSpan state;
   final TickClock clock;
-  volatile Throwable caller;
 
   PendingSpan(TraceContext context, MutableSpan state, TickClock clock) {
     super(context);

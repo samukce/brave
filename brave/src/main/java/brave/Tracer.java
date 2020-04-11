@@ -15,7 +15,7 @@ package brave;
 
 import brave.handler.FinishedSpanHandler;
 import brave.handler.MutableSpan;
-import brave.handler.SpanHandler;
+import brave.handler.SpanListener;
 import brave.internal.InternalPropagation;
 import brave.internal.Nullable;
 import brave.internal.Platform;
@@ -90,7 +90,7 @@ public class Tracer {
 
   final Clock clock;
   final Propagation.Factory propagationFactory;
-  final SpanHandler spanHandler;
+  final SpanListener spanListener;
   final FinishedSpanHandler finishedSpanHandler;
   final PendingSpans pendingSpans;
   final Sampler sampler;
@@ -101,7 +101,7 @@ public class Tracer {
   Tracer(
     Clock clock,
     Propagation.Factory propagationFactory,
-    SpanHandler spanHandler,
+    SpanListener spanListener,
     FinishedSpanHandler finishedSpanHandler,
     PendingSpans pendingSpans,
     Sampler sampler,
@@ -113,7 +113,7 @@ public class Tracer {
   ) {
     this.clock = clock;
     this.propagationFactory = propagationFactory;
-    this.spanHandler = spanHandler;
+    this.spanListener = spanListener;
     this.finishedSpanHandler = finishedSpanHandler;
     this.pendingSpans = pendingSpans;
     this.sampler = sampler;
@@ -134,7 +134,7 @@ public class Tracer {
     return new Tracer(
       clock,
       propagationFactory,
-      spanHandler,
+      spanListener,
       finishedSpanHandler,
       pendingSpans,
       sampler,

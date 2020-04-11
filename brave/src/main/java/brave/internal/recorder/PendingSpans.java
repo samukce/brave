@@ -17,10 +17,9 @@ import brave.Clock;
 import brave.Tracer;
 import brave.handler.FinishedSpanHandler;
 import brave.handler.MutableSpan;
-import brave.handler.SpanHandler;
+import brave.handler.SpanListener;
 import brave.internal.InternalPropagation;
 import brave.internal.Nullable;
-import brave.internal.Platform;
 import brave.propagation.TraceContext;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -47,17 +46,16 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
   // Even though we only put by RealKey, we allow get and remove by LookupKey
   final ConcurrentMap<Object, PendingSpan> delegate = new ConcurrentHashMap<>(64);
   final Clock clock;
-  final SpanHandler spanHandler;
+  final SpanListener spanListener;
   final FinishedSpanHandler orphanedSpanHandler;
-  final boolean trackOrphans;
   final AtomicBoolean noop;
 
-  public PendingSpans(Clock clock, SpanHandler spanHandler, FinishedSpanHandler orphanedSpanHandler,
-    boolean trackOrphans, AtomicBoolean noop) {
+  public PendingSpans(Clock clock, SpanListener spanListener,
+    FinishedSpanHandler orphanedSpanHandler,
+    AtomicBoolean noop) {
     this.clock = clock;
-    this.spanHandler = spanHandler;
+    this.spanListener = spanListener;
     this.orphanedSpanHandler = orphanedSpanHandler;
-    this.trackOrphans = trackOrphans;
     this.noop = noop;
   }
 
@@ -104,29 +102,39 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
     // We've now allocated a new trace context.
     // It is a bug to have neither a reference to your parent or local root set.
     assert parent != null || context.isLocalRoot();
-    spanHandler.handleCreate(parent, context, newSpan.state);
-
-    if (trackOrphans) {
-      newSpan.caller =
-        new Throwable("Thread " + Thread.currentThread().getName() + " allocated span here");
-    }
+    spanListener.onCreate(parent, context, newSpan.state);
     return newSpan;
   }
 
   /** @see brave.Span#abandon() */
   public void abandon(TraceContext context) {
-    if (context == null) throw new NullPointerException("context == null");
-    PendingSpan last = delegate.remove(context);
-    reportOrphanedSpans(); // also clears the reference relating to the recent remove
-    if (last != null) spanHandler.handleAbandon(context, last.state);
+    PendingSpan last = remove(context);
+    if (last != null) spanListener.onAbandon(context, last.state);
+  }
+
+  /** @see brave.Span#flush() */
+  public boolean flush(TraceContext context) {
+    PendingSpan last = remove(context);
+    if (last == null) return false;
+    spanListener.onFlush(context, last.state);
+    return true;
   }
 
   /** @see brave.Span#finish() */
-  public boolean remove(TraceContext context) {
+  public boolean finish(TraceContext context, long timestamp) {
+    PendingSpan last = remove(context);
+    if (last == null) return false;
+
+    last.state.finishTimestamp(timestamp != 0L ? timestamp : last.clock.currentTimeMicroseconds());
+    spanListener.onFinish(context, last.state);
+    return true;
+  }
+
+  PendingSpan remove(TraceContext context) {
     if (context == null) throw new NullPointerException("context == null");
     PendingSpan last = delegate.remove(context);
     reportOrphanedSpans(); // also clears the reference relating to the recent remove
-    return last != null;
+    return last;
   }
 
   /** Reports spans orphaned by garbage collection. */
@@ -145,7 +153,6 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
       if (flushTime == 0L) flushTime = clock.currentTimeMicroseconds();
 
       boolean isEmpty = value.state.isEmpty();
-      Throwable caller = value.caller;
 
       TraceContext context = InternalPropagation.instance.newTraceContext(
         contextKey.flags,
@@ -154,12 +161,7 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
         Collections.emptyList()
       );
 
-      if (caller != null) {
-        String message = isEmpty
-          ? "Span " + context + " was allocated but never used"
-          : "Span " + context + " neither finished nor flushed before GC";
-        Platform.get().log(message, caller);
-      }
+      spanListener.onOrphan(context, value.state);
       if (isEmpty) continue;
 
       value.state.annotate(flushTime, "brave.flush");

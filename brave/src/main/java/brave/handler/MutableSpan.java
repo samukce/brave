@@ -16,6 +16,7 @@ package brave.handler;
 import brave.Span.Kind;
 import brave.Tag;
 import brave.Tracer;
+import brave.internal.InternalHandler;
 import brave.internal.IpLiteral;
 import brave.internal.Nullable;
 import brave.propagation.TraceContext;
@@ -71,7 +72,7 @@ public final class MutableSpan implements Cloneable {
   ArrayList<String> tags;
   /** Also use pair indexing for annotations, but type object to store (startTimestamp, value). */
   ArrayList<Object> annotations;
-  Throwable error;
+  Throwable caller, error;
 
   public MutableSpan() {
     // this cheats because it will not need to grow unless there are more than 5 tags
@@ -345,5 +346,17 @@ public final class MutableSpan implements Cloneable {
    */
   public void setShared() {
     shared = true;
+  }
+
+  static {
+    InternalHandler.instance = new InternalHandler() {
+      @Override public void caller(MutableSpan span, Throwable caller) {
+        span.caller = caller;
+      }
+
+      @Override public Throwable caller(MutableSpan span) {
+        return span.caller;
+      }
+    };
   }
 }

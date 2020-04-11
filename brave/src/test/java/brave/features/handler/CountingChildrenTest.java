@@ -35,8 +35,8 @@ import static org.assertj.core.api.Assertions.tuple;
  * you have spans that finish after their parent, you'll need a more fancy implementation.
  */
 public class CountingChildrenTest {
-  static final class TagChildCount extends FinishedChildrenHandler {
-    @Override protected void handle(MutableSpan parent, Iterator<MutableSpan> children) {
+  static final class TagChildCount extends FinishedChildrenListener {
+    @Override protected void onFinish(MutableSpan parent, Iterator<MutableSpan> children) {
       int count = 0;
       for (; children.hasNext(); children.next()) {
         count++;
@@ -48,7 +48,7 @@ public class CountingChildrenTest {
   List<zipkin2.Span> spans = new ArrayList<>();
   Tracing tracing = Tracing.newBuilder()
     .spanReporter(spans::add)
-    .addFinishedSpanHandler(new TagChildCount())
+    .addSpanListener(new TagChildCount())
     .build();
   Tracer tracer = tracing.tracer();
 
