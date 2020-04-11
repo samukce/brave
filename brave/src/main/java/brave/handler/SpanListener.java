@@ -50,9 +50,9 @@ public class SpanListener {
    *
    * <ol>
    *   <li>{@link #onAbandon} if this was a speculative context</li>
-   *   <li>{@link #onFlush} if this was intentionally reported incomplete
-   *   <li>{@link #onOrphan} if this was reported incomplete due to garbage collection
-   *   <li>{@link #onFinish} if this was reported complete
+   *   <li>{@link #onFlush} if this was intentionally reported incomplete</li>
+   *   <li>{@link #onOrphan} if this was reported incomplete due to garbage collection</li>
+   *   <li>{@link #onFinish} if this was reported complete</li>
    * </ol>
    *
    * <p>The {@code parent} can be {@code null} only when the new context is a {@linkplain
