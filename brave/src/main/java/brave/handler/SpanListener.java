@@ -62,8 +62,7 @@ public class SpanListener {
   }
 
   /**
-   * Called only when {@link Span#abandon()} was called before {@link Span#finish()} or {@link
-   * Span#flush()}.
+   * Called on {@link Span#abandon()}.
    *
    * <p>This is useful when counting children. Decrement your counter when this occurs as the span
    * will not be reported.
@@ -74,19 +73,31 @@ public class SpanListener {
   public void onAbandon(TraceContext context, MutableSpan span) {
   }
 
+  /**
+   * Called on {@link Span#flush()}.
+   *
+   * <p>Even though the span here will is incomplete (missing {@link MutableSpan#finishTimestamp()},
+   * it is reported to the tracing system unless a {@link FinishedSpanHandler} returns false.
+   */
   public void onFlush(TraceContext context, MutableSpan span) {
   }
 
   /**
-   * Unlike {@link FinishedSpanHandler#supportsOrphans()}, this is called even if {@linkplain
-   * MutableSpan#isEmpty()}. Otherwise, there would not be a one-to-one ratio with {@link #onCreate}
-   * and an end state.
+   * Called when the trace context was garbage collected prior to completion.
    *
+   * <p>Unlike {@link FinishedSpanHandler#supportsOrphans()}, this is called even if {@linkplain
+   * MutableSpan#isEmpty() empty}. Non-empty spans are reported to the tracing system unless a
+   * {@link FinishedSpanHandler} returns false.
+   *
+   * @param context unlike the other methods, this context will not be the same reference as {@link
+   * #onCreate} even though it will have the same trace IDs.
+   * @param span possibly {@linkplain MutableSpan#isEmpty() empty} span.
    * @see FinishedSpanHandler#supportsOrphans()
    */
   public void onOrphan(TraceContext context, MutableSpan span) {
   }
 
+  /** Called on {@link Span#finish()}. */
   public void onFinish(TraceContext context, MutableSpan span) {
   }
 }
