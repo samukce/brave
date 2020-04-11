@@ -20,8 +20,8 @@ import java.lang.ref.WeakReference;
 
 /**
  * This is like {@link FinishedSpanHandler}, except it can cover all state conditions, including
- * when a is created or abandoned. The purpose of this type is to allow tracking of children, or
- * partitioning of data for backend that needs to see an entire {@linkplain
+ * when a span is created or abandoned. The purpose of this type is to allow tracking of children,
+ * or partitioning of data for backend that needs to see an entire {@linkplain
  * TraceContext#localRootId() local root}.
  *
  * <p>As with {@link FinishedSpanHandler}, it is important to do work quickly as callbacks are run
