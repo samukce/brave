@@ -15,10 +15,12 @@ package brave;
 
 import brave.baggage.BaggageField;
 import brave.handler.FinishedSpanHandler;
+import brave.handler.SpanHandler;
 import brave.internal.IpLiteral;
 import brave.internal.Nullable;
 import brave.internal.Platform;
 import brave.internal.handler.NoopAwareFinishedSpanHandler;
+import brave.internal.handler.SafeSpanHandler;
 import brave.internal.handler.ZipkinFinishedSpanHandler;
 import brave.internal.recorder.PendingSpans;
 import brave.propagation.B3Propagation;
@@ -340,10 +342,12 @@ public abstract class Tracing implements Closeable {
      */
     public Builder addFinishedSpanHandler(FinishedSpanHandler handler) {
       if (handler == null) throw new NullPointerException("finishedSpanHandler == null");
-      if (handler != FinishedSpanHandler.NOOP) { // lenient on config bug
-        if (!finishedSpanHandlers.add(handler)) {
-          Platform.get().log("Please check configuration as %s was added twice", handler, null);
-        }
+
+      // Some configuration can coerce to no-op, ignore in this case.
+      if (handler == FinishedSpanHandler.NOOP || handler == SpanHandler.NOOP) return this;
+
+      if (!finishedSpanHandlers.add(handler)) {
+        Platform.get().log("Please check configuration as %s was added twice", handler, null);
       }
       return this;
     }
@@ -441,6 +445,12 @@ public abstract class Tracing implements Closeable {
       FinishedSpanHandler finishedSpanHandler =
         zipkinReportingFinishedSpanHandler(builder.finishedSpanHandlers, zipkinHandler, noop);
 
+      Set<SpanHandler> spanHandlers = new LinkedHashSet<>();
+      for (FinishedSpanHandler handler : builder.finishedSpanHandlers) {
+        if (handler instanceof SpanHandler) spanHandlers.add((SpanHandler) handler);
+      }
+      SpanHandler spanHandler = SafeSpanHandler.create(spanHandlers.toArray(new SpanHandler[0]));
+
       Set<FinishedSpanHandler> orphanedSpanHandlers = new LinkedHashSet<>();
       for (FinishedSpanHandler handler : builder.finishedSpanHandlers) {
         if (handler.supportsOrphans()) orphanedSpanHandlers.add(handler);
@@ -456,8 +466,9 @@ public abstract class Tracing implements Closeable {
       this.tracer = new Tracer(
         builder.clock,
         builder.propagationFactory,
+        spanHandler,
         finishedSpanHandler,
-        new PendingSpans(clock, orphanedSpanHandler, builder.trackOrphans, noop),
+        new PendingSpans(clock, spanHandler, orphanedSpanHandler, builder.trackOrphans, noop),
         builder.sampler,
         builder.currentTraceContext,
         builder.traceId128Bit || propagationFactory.requires128BitTraceId(),

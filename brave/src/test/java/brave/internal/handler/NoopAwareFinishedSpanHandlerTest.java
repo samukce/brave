@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 The OpenZipkin Authors
+ * Copyright 2013-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -40,11 +40,6 @@ public class NoopAwareFinishedSpanHandlerTest {
 
   @Test public void create_emptyIsNoop() {
     assertThat(NoopAwareFinishedSpanHandler.create(asList(), noop))
-      .isEqualTo(FinishedSpanHandler.NOOP);
-  }
-
-  @Test public void create_noopPassthrough() {
-    assertThat(NoopAwareFinishedSpanHandler.create(asList(FinishedSpanHandler.NOOP), noop))
       .isEqualTo(FinishedSpanHandler.NOOP);
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 The OpenZipkin Authors
+ * Copyright 2013-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,10 +31,7 @@ public abstract class NoopAwareFinishedSpanHandler extends FinishedSpanHandler {
   public static FinishedSpanHandler create(List<FinishedSpanHandler> handlers, AtomicBoolean noop) {
     if (handlers.isEmpty()) return FinishedSpanHandler.NOOP;
 
-    if (handlers.size() == 1) {
-      FinishedSpanHandler onlyHandler = handlers.get(0);
-      return onlyHandler == FinishedSpanHandler.NOOP ? onlyHandler : new Single(onlyHandler, noop);
-    }
+    if (handlers.size() == 1) return new Single(handlers.get(0), noop);
 
     boolean alwaysSampleLocal = false, supportsOrphans = false;
     for (FinishedSpanHandler handler : handlers) {

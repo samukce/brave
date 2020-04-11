@@ -16,6 +16,7 @@ package brave.internal.recorder;
 import brave.GarbageCollectors;
 import brave.handler.FinishedSpanHandler;
 import brave.handler.MutableSpan;
+import brave.handler.SpanHandler;
 import brave.internal.InternalPropagation;
 import brave.propagation.SamplingFlags;
 import brave.propagation.TraceContext;
@@ -71,7 +72,7 @@ public class PendingSpansTest {
   }
 
   void init(FinishedSpanHandler zipkinFinishedSpanHandler, boolean trackOrphans) {
-    pendingSpans = new PendingSpans(() -> clock.incrementAndGet() * 1000L,
+    pendingSpans = new PendingSpans(() -> clock.incrementAndGet() * 1000L, SpanHandler.NOOP,
       zipkinFinishedSpanHandler, trackOrphans, new AtomicBoolean());
   }
 

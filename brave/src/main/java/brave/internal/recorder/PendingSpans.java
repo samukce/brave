@@ -17,6 +17,7 @@ import brave.Clock;
 import brave.Tracer;
 import brave.handler.FinishedSpanHandler;
 import brave.handler.MutableSpan;
+import brave.handler.SpanHandler;
 import brave.internal.InternalPropagation;
 import brave.internal.Nullable;
 import brave.internal.Platform;
@@ -46,13 +47,15 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
   // Even though we only put by RealKey, we allow get and remove by LookupKey
   final ConcurrentMap<Object, PendingSpan> delegate = new ConcurrentHashMap<>(64);
   final Clock clock;
+  final SpanHandler spanHandler;
   final FinishedSpanHandler orphanedSpanHandler;
   final boolean trackOrphans;
   final AtomicBoolean noop;
 
-  public PendingSpans(Clock clock, FinishedSpanHandler orphanedSpanHandler, boolean trackOrphans,
-    AtomicBoolean noop) {
+  public PendingSpans(Clock clock, SpanHandler spanHandler, FinishedSpanHandler orphanedSpanHandler,
+    boolean trackOrphans, AtomicBoolean noop) {
     this.clock = clock;
+    this.spanHandler = spanHandler;
     this.orphanedSpanHandler = orphanedSpanHandler;
     this.trackOrphans = trackOrphans;
     this.noop = noop;
@@ -84,6 +87,8 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
     // save overhead calculating time if the parent is in-progress (usually is)
     TickClock clock;
     if (parentSpan != null) {
+      TraceContext parentContext = parentSpan.context();
+      if (parentContext != null) parent = parentContext;
       clock = parentSpan.clock;
       if (start) data.startTimestamp(clock.currentTimeMicroseconds());
     } else {
@@ -99,6 +104,7 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
     // We've now allocated a new trace context.
     // It is a bug to have neither a reference to your parent or local root set.
     assert parent != null || context.isLocalRoot();
+    spanHandler.handleCreate(parent, context, newSpan.state);
 
     if (trackOrphans) {
       newSpan.caller =
@@ -112,6 +118,7 @@ public final class PendingSpans extends ReferenceQueue<TraceContext> {
     if (context == null) throw new NullPointerException("context == null");
     PendingSpan last = delegate.remove(context);
     reportOrphanedSpans(); // also clears the reference relating to the recent remove
+    if (last != null) spanHandler.handleAbandon(context, last.state);
   }
 
   /** @see brave.Span#finish() */
