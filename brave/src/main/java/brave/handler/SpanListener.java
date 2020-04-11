@@ -36,22 +36,6 @@ import java.lang.ref.WeakReference;
 public class SpanListener {
   /** Use to avoid comparing against null references */
   public static final SpanListener NOOP = new SpanListener() {
-    @Override
-    public void onCreate(@Nullable TraceContext parent, TraceContext context, MutableSpan span) {
-    }
-
-    @Override public void onAbandon(TraceContext context, MutableSpan span) {
-    }
-
-    @Override public void onFlush(TraceContext context, MutableSpan span) {
-    }
-
-    @Override public void onOrphan(TraceContext context, MutableSpan span) {
-    }
-
-    @Override public void onFinish(TraceContext context, MutableSpan span) {
-    }
-
     @Override public String toString() {
       return "NoopSpanListener{}";
     }
