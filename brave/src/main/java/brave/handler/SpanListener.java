@@ -31,7 +31,7 @@ import java.lang.ref.WeakReference;
  * all callbacks, except {@link #onOrphan}, which has value, but not reference equality.
  *
  * <p>The {@link MutableSpan} parameter from {@link #onCreate} will be the same reference for
- * all callbacks.
+ * all callbacks. Do not mutate {@link MutableSpan} between callbacks as it is not thread safe.
  *
  * <p>If caching the {@link TraceContext} parameter, consider a {@link WeakReference} to avoid
  * holding up garbage collection.
